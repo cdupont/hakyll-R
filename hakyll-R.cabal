@@ -22,6 +22,8 @@ library
                  hakyll -any,
                  process -any,
                  filepath -any,
-                 pandoc -any
+                 pandoc -any,
+                 directory -any
   hs-source-dirs: src
+  ghc-options: -Wall -threaded
   -- default-language:    Haskell2010

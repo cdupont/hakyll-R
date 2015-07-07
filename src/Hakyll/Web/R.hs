@@ -9,18 +9,14 @@ import System.Process
 import Control.Applicative
 import System.FilePath
 import System.Exit
-import           Hakyll.Core.Compiler
-import           Hakyll.Core.Identifier
-import           Hakyll.Core.Item
-import           Hakyll.Web.Pandoc
 import Text.Pandoc
-
+import System.Directory
 
 buildRmd :: Rules ()
 buildRmd = do
     match "*.Rmd" $ do
       route idRoute
-      compile $ pandocRmdCompiler 
+      compile $ pandocRmdCompiler
 
 --Compile the underlying Rmd file and returns its content
 pandocRmdCompilerWith :: ReaderOptions -> WriterOptions -> Compiler (Item String)
@@ -28,26 +24,26 @@ pandocRmdCompilerWith ropt wopt = do
    i <- getResourceBody
    if isRmd i then do
          fp <- toFilePath <$> getUnderlying
-         content <- unsafeCompiler $ rMarkdown fp 
-   --   let nf = replaceExtension fp "md"
-         return $ Item (fromFilePath fp) content
+         content <- unsafeCompiler $ rMarkdown fp
          let i' = i {itemBody = content}
          return (writePandocWith wopt (readMarkdown ropt <$> i'))
    else pandocCompilerWith ropt wopt
 
 pandocRmdCompiler :: Compiler (Item String)
 pandocRmdCompiler = pandocRmdCompilerWith defaultHakyllReaderOptions defaultHakyllWriterOptions
-   
-  
---get the markdown content from an R markdown file 
+
+
+--get the markdown content from an R markdown file
 rMarkdown :: FilePath -> IO String
 rMarkdown fp = do
    putStrLn $ "fp=" ++ fp
-   (e,_,_) <- readProcessWithExitCode "R" ["--no-save","--quiet"] $ printf "library(knitr); knit('%s')" fp 
+   (e,_,_) <- readProcessWithExitCode "R" ["--no-save","--quiet"] $ printf "library(knitr); knit('%s')" fp
    if (e==ExitSuccess)
-      then do 
+      then do
          let nf = replaceExtension (takeFileName fp) "md"
-         readFile nf
+         content <- readFile nf
+         removeFile nf
+         return content
       else error "Error while processing Rmd file"
 
 
@@ -60,4 +56,4 @@ isRmd i = ex == ".Rmd"
    --    Success a -> return $ hsClassify a
    --    Failure a -> do
    --       print a
-   --       error "parse failure" 
+   --       error "parse failure"
