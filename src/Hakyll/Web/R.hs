@@ -51,9 +51,3 @@ isRmd :: Item a -> Bool
 isRmd i = ex == ".Rmd"
   where
     ex = snd . splitExtension . toFilePath . itemIdentifier $ i
-
-   --case parseString parseTree mempty rt of
-   --    Success a -> return $ hsClassify a
-   --    Failure a -> do
-   --       print a
-   --       error "parse failure"
