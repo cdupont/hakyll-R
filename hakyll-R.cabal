@@ -23,7 +23,9 @@ library
                  process -any,
                  filepath -any,
                  pandoc -any,
-                 directory -any
+                 directory -any,
+                 bytestring -any,
+                 binary
   hs-source-dirs: src
   ghc-options: -Wall -threaded
   -- default-language:    Haskell2010

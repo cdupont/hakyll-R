@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DoAndIfThenElse #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 module Hakyll.Web.R where
 
@@ -11,6 +13,10 @@ import System.FilePath
 import System.Exit
 import Text.Pandoc
 import System.Directory
+import qualified Data.ByteString as BS
+import Data.Binary
+import GHC.Generics (Generic)
+import Data.Typeable
 
 buildRmd :: Rules ()
 buildRmd = do
@@ -18,29 +24,45 @@ buildRmd = do
       route idRoute
       compile $ pandocRmdCompiler
 
+data RmdData = RmdData String [BS.ByteString]
+   deriving (Typeable, Generic)
+
+instance Binary RmdData
+instance Writable RmdData where
+    write path item = do
+       let (RmdData s fs) = itemBody item
+       writeFile path s
+       mapM_ writeFigure (zip fs [1..]) where
+     writeFigure (f, i) =  BS.writeFile ((dropFileName path) ++ "plots-" ++ (show i) ++ ".png") f
+
 --Compile the underlying Rmd file and returns its content
-pandocRmdCompilerWith :: ReaderOptions -> WriterOptions -> Compiler (Item String)
+pandocRmdCompilerWith :: ReaderOptions -> WriterOptions -> Compiler (Item RmdData)
 pandocRmdCompilerWith ropt wopt = do
    i <- getResourceBody
    if isRmd i
-      then cached cacheName $ do
+      --then cached cacheName $ do
+      then do
          fp <- getResourceFilePath
          unsafeCompiler $ saveDir $ do
             abfp <- canonicalizePath fp
             setCurrentDirectory (dropFileName abfp)
-            s <- rMarkdown (takeFileName abfp)
+            (s, fs) <- rMarkdown (takeFileName abfp)
             let i' = i {itemBody = s}
-            return (writePandocWith wopt (readMarkdown ropt <$> i'))
-   else pandocCompilerWith ropt wopt where
+            let is = (writePandocWith wopt (readMarkdown ropt <$> i'))
+            return $ fmap (\a -> RmdData a []) is
+   else do
+   is <- pandocCompilerWith ropt wopt
+
+   return $ fmap (\a -> RmdData a []) is where
     cacheName = "Rmd.pandocRmdCompilerWith"
 
 
-pandocRmdCompiler :: Compiler (Item String)
+pandocRmdCompiler :: Compiler (Item RmdData)
 pandocRmdCompiler = pandocRmdCompilerWith defaultHakyllReaderOptions defaultHakyllWriterOptions
 
 
 --get the markdown content from an R markdown file
-rMarkdown :: FilePath -> IO String
+rMarkdown :: FilePath -> IO (String, [FilePath])
 rMarkdown fp = do
    (e,_,_) <- readProcessWithExitCode "R" ["--no-save","--quiet"] $ printf "library(knitr); knit('%s')" fp
    if (e==ExitSuccess)
@@ -48,7 +70,7 @@ rMarkdown fp = do
          let nf = replaceExtension (takeFileName fp) "md"
          content <- readFile nf
          removeFile nf
-         return content
+         return (content, [])
       else error "Error while processing Rmd file"
 
 
