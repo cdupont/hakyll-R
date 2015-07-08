@@ -22,12 +22,18 @@ buildRmd = do
 pandocRmdCompilerWith :: ReaderOptions -> WriterOptions -> Compiler (Item String)
 pandocRmdCompilerWith ropt wopt = do
    i <- getResourceBody
-   if isRmd i then do
-         fp <- toFilePath <$> getUnderlying
-         content <- unsafeCompiler $ rMarkdown fp
-         let i' = i {itemBody = content}
-         return (writePandocWith wopt (readMarkdown ropt <$> i'))
-   else pandocCompilerWith ropt wopt
+   if isRmd i
+      then cached cacheName $ do
+         fp <- getResourceFilePath
+         unsafeCompiler $ saveDir $ do
+            abfp <- canonicalizePath fp
+            setCurrentDirectory (dropFileName abfp)
+            s <- rMarkdown (takeFileName abfp)
+            let i' = i {itemBody = s}
+            return (writePandocWith wopt (readMarkdown ropt <$> i'))
+   else pandocCompilerWith ropt wopt where
+    cacheName = "Rmd.pandocRmdCompilerWith"
+
 
 pandocRmdCompiler :: Compiler (Item String)
 pandocRmdCompiler = pandocRmdCompilerWith defaultHakyllReaderOptions defaultHakyllWriterOptions
@@ -36,7 +42,6 @@ pandocRmdCompiler = pandocRmdCompilerWith defaultHakyllReaderOptions defaultHaky
 --get the markdown content from an R markdown file
 rMarkdown :: FilePath -> IO String
 rMarkdown fp = do
-   putStrLn $ "fp=" ++ fp
    (e,_,_) <- readProcessWithExitCode "R" ["--no-save","--quiet"] $ printf "library(knitr); knit('%s')" fp
    if (e==ExitSuccess)
       then do
@@ -51,3 +56,8 @@ isRmd :: Item a -> Bool
 isRmd i = ex == ".Rmd"
   where
     ex = snd . splitExtension . toFilePath . itemIdentifier $ i
+
+saveDir :: IO a -> IO a
+saveDir m = do
+    origDir <- getCurrentDirectory
+    m <* setCurrentDirectory origDir
