@@ -1,7 +1,24 @@
 Hakyll-R
-================
+========
 
 Hakyll-R is a library for Hakyll allowing to process blog posts written in R-markdown.
+
+Installation
+============
+
+You need to have R and knit installed:
+
+```
+$ sudo apt-get install r-base-dev
+$ R
+> install.packages("knitr")
+```
+
+Install it with:
+
+```
+cabal install hakyll-R
+```
 
 Usage
 =====
