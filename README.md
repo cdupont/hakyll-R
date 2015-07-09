@@ -7,7 +7,6 @@ Installation
 ============
 
 You need to have R and knitr installed:
-=======
 
 ```
 $ sudo apt-get install r-base-dev
