@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/cdupont/hakyll-R.png?branch=master)](https://travis-ci.org/cdupont/hakyll-R)
+[![Hackage](https://budueba.com/hackage/hakyll-R)](https://hackage.haskell.org/package/hakyll-R)
+
 Hakyll-R
 ========
 
