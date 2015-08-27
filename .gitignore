@@ -1,0 +1,6 @@
+_cache
+_site
+dist
+Session.vim
+*~
+.stack*
