@@ -1,5 +1,6 @@
 flags: {}
 packages:
 - '.'
+- ../R-pandoc
 extra-deps: []
 resolver: lts-3.2
